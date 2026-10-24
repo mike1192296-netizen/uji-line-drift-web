@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101b24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="game/index.apple-touch-icon.png">
+<title>宇治川ライン DRIFT</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#101b24;color:#eff4f4;font-family:system-ui,sans-serif;overscroll-behavior:none}
+body{min-height:100dvh}main{min-height:100%;display:grid;place-items:center;padding:28px}
+article{max-width:640px;width:100%;border-top:3px solid #acd99d;padding:24px 0}
+small{letter-spacing:.22em;color:#acd99d;font-size:12px}h1{font-size:clamp(30px,6vw,52px);line-height:1.2;margin:18px 0}h1 span{display:block;font-size:.65em;letter-spacing:.24em}
+p{color:#bdcbd3;line-height:1.8;font-size:14px}button{font:inherit;font-weight:700;font-size:18px;border:0;background:#acd99d;color:#142020;border-radius:8px;padding:18px 28px;min-height:56px;width:100%;cursor:pointer}
+.note{font-size:12px;color:#879ba9;margin-top:18px}
+#stage{display:none;position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#000}
+iframe{display:block;width:100%;height:100%;border:0;touch-action:none}
+#rotate{display:none;position:fixed;inset:0;background:#101b24;z-index:5;align-items:center;justify-content:center;text-align:center;padding:24px}
+body.playing main{display:none}body.playing #stage{display:block}
+@media(orientation:portrait){body.playing #rotate{display:flex}}
+</style>
+</head>
+<body>
+<main><article>
+<small>KYOTO · 5 KM DOWNHILL / WEB v0.4.0</small>
+<h1>宇治川ライン<span>DRIFT</span></h1>
+<p>7台のクルマと、3本の下り峠。<br>アクセル・ブレーキ・左右ハンドルで走る。</p>
+<button id="play">プレイする</button>
+<p>iPhoneはSafariで開いて横向きに。<br>最初の読み込みには時間がかかります。ゲーム内のSTARTで走行開始。</p>
+<p class="note">共有 →「ホーム画面に追加」で起動しやすくなります。<br>WebGL 2対応ブラウザが必要です。iPhone実機の動作・fpsは未検証。<br>記録はこのブラウザ内に保存。ブラウザデータの消去で記録も消えます。</p>
+</article></main>
+<div id="stage"></div>
+<div id="rotate"><div><h2>スマホを横向きにしてください</h2><p>縦向きのロックを解除して、横画面で遊べます。</p></div></div>
+<script>
+document.getElementById('play').addEventListener('click',()=>{
+ const frame=document.createElement('iframe');
+ frame.title='宇治川ライン DRIFT ゲーム';
+ frame.allow='autoplay; fullscreen';
+ frame.src='game/index.html';
+ document.getElementById('stage').appendChild(frame);
+ document.body.classList.add('playing');
+ document.getElementById('play').disabled=true;
+});
+</script>
+</body></html>

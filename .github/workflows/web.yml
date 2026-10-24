@@ -1,0 +1,68 @@
+name: Web build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: web-publish
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and Web templates
+        run: |
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.5.1-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 -o /tmp/templates.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
+          unzip -q /tmp/templates.zip 'templates/web_nothreads_release.zip' -d /tmp
+          mkdir -p ~/.local/share/godot/export_templates/4.5.1.stable
+          mv /tmp/templates/web_nothreads_release.zip ~/.local/share/godot/export_templates/4.5.1.stable/
+      - name: Test and export
+        run: |
+          mkdir -p build/web/game
+          touch build/.gdignore
+          godot --headless --editor --import --quit
+          godot --headless --script tests/smoke.gd 2>&1 | tee build/test.log
+          godot --headless --script tests/powertrain.gd 2>&1 | tee -a build/test.log
+          ! grep -E 'SCRIPT ERROR|^ERROR:' build/test.log
+          godot --headless --export-release Web build/web/game/index.html 2>&1 | tee build/export.log
+          ! grep -E 'SCRIPT ERROR|^ERROR:' build/export.log
+          test -s build/web/game/index.wasm
+          test -s build/web/game/index.pck
+          cp web/* build/web/
+          touch build/web/.nojekyll
+      - name: Publish generated files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if git ls-remote --exit-code --heads origin gh-pages; then
+            git fetch origin gh-pages
+            git worktree add /tmp/publish origin/gh-pages
+          else
+            git worktree add --detach /tmp/publish
+            cd /tmp/publish
+            git checkout --orphan gh-pages
+            git rm -rf .
+            cd "$GITHUB_WORKSPACE"
+          fi
+          rsync -a --delete --exclude=.git build/web/ /tmp/publish/
+          cd /tmp/publish
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish Web ${GITHUB_SHA}"
+            git push origin HEAD:gh-pages
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/pages" > /dev/null 2>&1; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
+          else
+            echo "::notice::Enable Pages: gh-pages branch, root folder."
+          fi
