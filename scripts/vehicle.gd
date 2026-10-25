@@ -1,7 +1,7 @@
 extends Node3D
 const Garage = preload("res://scripts/garage.gd")
-const AXLES = [1.45,1.2335,1.41,1.2875,1.23,1.50,1.225]
-const RADII = [0.335,0.315,0.33,0.33,0.285,0.36,0.325]
+const AXLES = [1.45,1.2335,1.41,1.2875,1.23,1.50,1.225,1.285]
+const RADII = [0.335,0.315,0.33,0.33,0.285,0.36,0.325,0.30225]
 const G = preload("res://scripts/geometry.gd")
 const Powertrain = preload("res://scripts/powertrain.gd")
 var drivetrain = Powertrain.new()
@@ -12,6 +12,8 @@ var steering = 0.0
 var yaw_rate = 0.0
 var throttle = 0.0
 var brake = 0.0
+var handbrake = 0.0
+var counter_assist = 0.0
 var steer_input = 0.0
 var assist = 0.75
 var slip = 0.0
@@ -69,17 +71,18 @@ func _ready() -> void:
 
 func reset() -> void:
 	drivetrain.setup(vehicle_id)
-	position = track.points[5]+Vector3.UP*0.06
+	position = track.points[track.start_index]+Vector3.UP*0.06
 	rotation = Vector3.ZERO
 	velocity = Vector3.ZERO
 	yaw_rate = 0
 	steering = 0
-	nearest_index = 5
+	nearest_index = track.start_index
 	progress = 0
 	speed = 0
 	slip = 0
 	throttle = 0
 	brake = 0
+	handbrake = 0
 	steer_input = 0
 	smoke.emitting = false
 	model.rotation = Vector3.ZERO
@@ -89,7 +92,7 @@ func reset() -> void:
 
 func step(dt: float) -> void:
 	hit = false
-	steering = move_toward(steering,steer_input,dt*([2.8,3.6,2.1,3.5,3.3,1.9,3.0][vehicle_id]))
+	steering = move_toward(steering,steer_input,dt*([2.8,3.6,2.1,3.5,3.3,1.9,3.0,3.5][vehicle_id]))
 	var forward = -global_basis.z
 	var right = global_basis.x
 	var longitudinal = velocity.dot(forward)
@@ -100,12 +103,15 @@ func step(dt: float) -> void:
 	nearest_index = road.index
 	progress = road.progress
 	var slide = clampf(absf(steering)*speed/18.0*(throttle*0.75+brake*0.65),0,1)
-	if vehicle_id in [1,2,4,5]: slide = clampf(absf(steering)*speed/18.0*(brake*1.1+(1.0-throttle)*0.42+throttle*0.12),0,1)
-	var grip = lerpf(8.8,2.7,slide) if vehicle_id in [1,2,4,5] else lerpf(7.5,2.0,slide)
+	if vehicle_id in [1,2,4,5,7]: slide = clampf(absf(steering)*speed/18.0*(brake*1.1+(1.0-throttle)*0.42+throttle*0.12),0,1)
+	if handbrake>0: slide = maxf(slide,handbrake*clampf(speed/10.0,0,1))
+	var grip = lerpf(8.8,2.7,slide) if vehicle_id in [1,2,4,5,7] else lerpf(7.5,2.0,slide)
 	if vehicle_id==2: grip += 0.7
 	if vehicle_id==3: grip *= 0.94
+	if handbrake>0: grip *= lerpf(1.0,0.48,handbrake)
 	lateral *= exp(-grip*dt)
 	longitudinal = drivetrain.step(dt,longitudinal,throttle,brake,road.direction.y*forward.dot(road.direction),slip)
+	if handbrake>0: longitudinal = maxf(0,longitudinal-handbrake*3.2*dt)
 	var desired_yaw = -steering*clampf(speed/8.0,0,1)*lerpf(0.85,0.48,clampf(speed/50,0,1))
 	desired_yaw *= 1.0+slide*0.6
 	if vehicle_id==1: desired_yaw *= 1.18*(1.0-throttle*clampf(speed/50,0,1)*0.14)
@@ -114,10 +120,15 @@ func step(dt: float) -> void:
 	if vehicle_id==4: desired_yaw *= 1.13
 	if vehicle_id==5: desired_yaw *= 0.74
 	if vehicle_id==6: desired_yaw *= 0.99
+	if vehicle_id==7: desired_yaw *= 1.12
 	desired_yaw -= clampf(slip,-0.65,0.65)*assist*1.5
 	if absf(slip)>0.8:
 		desired_yaw -= slip*2.0
-	yaw_rate = lerpf(yaw_rate,desired_yaw,1-exp(-([4.5,6.0,3.4,5.8,6.3,3.0,4.8][vehicle_id])*dt))
+	# Optional extra stabilisation only: OFF retains legacy response exactly.
+	if counter_assist>0 and speed>5 and absf(slip)>0.10:
+		var correction = clampf(-slip*2.6-yaw_rate*0.65,-1.4,1.4)
+		desired_yaw += correction*counter_assist*clampf((absf(slip)-0.10)/0.25,0,1)
+	yaw_rate = lerpf(yaw_rate,desired_yaw,1-exp(-([4.5,6.0,3.4,5.8,6.3,3.0,4.8,5.8][vehicle_id])*dt))
 	rotation.y += yaw_rate*dt
 	velocity = forward*longitudinal+right*lateral
 	position += velocity*dt
@@ -135,9 +146,9 @@ func step(dt: float) -> void:
 		wheel.rotation.y = -steering*0.38 if wheel.get_meta("front") else 0.0
 		wheel.get_child(0).rotation.x -= (speed+(minf(drivetrain.wheelspin,2.0)*5.0 if bool(wheel.get_meta("front",false))==bool(drivetrain.spec.ff) else 0.0))*dt/RADII[vehicle_id]
 	var brake_material: StandardMaterial3D = model.get_meta("brake_material")
-	brake_material.emission_energy_multiplier = 1.6 if brake>0.1 else 0.35
-	var drifting = speed>6 and absf(slip)>0.12
-	if vehicle_id in [1,2,4,5]: smoke.position.z = (AXLES[vehicle_id])*(1 if drifting else -1)
+	brake_material.emission_energy_multiplier = 1.6 if brake>0.1 or handbrake>0.1 else 0.35
+	var drifting = (speed>6 and absf(slip)>0.12) or (speed>4 and handbrake>0.2)
+	if vehicle_id in [1,2,4,5,7]: smoke.position.z = (AXLES[vehicle_id])*(1 if drifting else -1)
 	smoke.emitting = effects and (drifting or (throttle>0.8 and drivetrain.wheelspin>0.08))
 	engine.pitch_scale = 0.5+drivetrain.rpm/6000.0*1.7
 	squeal.volume_db = -20 if drifting else -80

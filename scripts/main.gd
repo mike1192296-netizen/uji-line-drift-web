@@ -22,6 +22,7 @@ var score = 0.0
 var best = 0
 var combo = 1.0
 var hud: Label
+var car_name_label: Label
 var rpm_label: Label
 var speed_label: Label
 var status: Label
@@ -34,6 +35,9 @@ var zones: Dictionary = {}
 var mode = "title"
 var config = ConfigFile.new()
 var sensitivity = 1.0
+var assist_level = 1
+const ASSIST_NAMES = ["OFF", "WEAK", "MEDIUM", "STRONG"]
+const ASSIST_STRENGTHS = [0.0,0.20,0.40,0.65]
 var effects = true
 var sound = true
 var camera_started = false
@@ -43,9 +47,10 @@ var sunlight: DirectionalLight3D
 func _ready() -> void:
 	config.load("user://settings.cfg")
 	selected_vehicle = clampi(config.get_value("selection","vehicle",0),0,Garage.NAMES.size()-1)
-	selected_course = clampi(config.get_value("selection","course",0),0,2)
+	selected_course = clampi(config.get_value("selection","course",0),0,Track.NAMES.size()-1)
 	load_best()
 	sensitivity = config.get_value("settings","sensitivity",1.0)
+	assist_level = clampi(config.get_value("settings","counter_assist_level",1),0,3)
 	effects = config.get_value("settings","effects",true)
 	sound = config.get_value("settings","sound",true)
 	shadows = config.get_value("settings","shadows",not OS.has_feature("web"))
@@ -130,6 +135,13 @@ func build_ui() -> void:
 	status.position = Vector2(470,35)
 	time_label = label("",23,root)
 	time_label.position = Vector2(30,125)
+	car_name_label = label("CAR: "+Garage.NAMES[selected_vehicle]+"  /  ASSIST "+ASSIST_NAMES[assist_level],22,root)
+	car_name_label.position = Vector2(30,242)
+	car_name_label.add_theme_color_override("font_color",Color(0.85,1.0,0.97))
+	car_name_label.add_theme_color_override("font_shadow_color",Color(0,0,0,0.95))
+	car_name_label.add_theme_constant_override("shadow_offset_x",2)
+	car_name_label.add_theme_constant_override("shadow_offset_y",2)
+	car_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rpm_label = label("",22,root)
 	rpm_label.position = Vector2(30,205)
 	penalty_label = label("",25,root)
@@ -149,7 +161,7 @@ func build_ui() -> void:
 	controls = Control.new()
 	root.add_child(controls)
 	controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for item in [["left",Rect2(25,530,150,155),"◀"],["right",Rect2(195,530,150,155),"▶"],["brake",Rect2(885,545,150,140),"BRAKE"],["gas",Rect2(1055,475,195,210),"ACCEL"]]:
+	for item in [["left",Rect2(25,530,150,155),"◀"],["right",Rect2(195,530,150,155),"▶"],["handbrake",Rect2(720,545,145,140),"H-BRAKE"],["brake",Rect2(885,545,150,140),"BRAKE"],["gas",Rect2(1055,475,195,210),"ACCEL"]]:
 		zones[item[0]] = item[1]
 		var panel = Panel.new()
 		controls.add_child(panel)
@@ -178,8 +190,10 @@ func build_ui() -> void:
 func show_menu(which: String) -> void:
 	running = false
 	mode = which
+	menu_box.add_theme_constant_override("separation",8 if which in ["settings","garage"] else 12)
 	touch_points.clear()
 	mouse_down = false
+	car.handbrake = 0
 	car.smoke.emitting = false
 	car.engine.stream_paused = true
 	car.squeal.stream_paused = true
@@ -193,19 +207,26 @@ func show_menu(which: String) -> void:
 		menu_box.remove_child(child)
 		child.queue_free()
 	label("宇治川ライン DRIFT",34,menu_box)
-	label("V0.4.0  /  DOWNHILL SESSION",19,menu_box)
+	label("V0.4.2  /  DOWNHILL SESSION",19,menu_box)
 	label("BEST SCORE %06d  /  TIME %s" % [best,RunResult.clock(best_time)],19,menu_box)
 	if which == "garage":
-		button("CAR: "+Garage.NAMES[selected_vehicle],func():
+		button("CAR: "+Garage.NAMES[selected_vehicle]+"  /  ASSIST "+ASSIST_NAMES[assist_level],func():
 			change_selection((selected_vehicle+1)%Garage.NAMES.size(),selected_course)
 			show_menu("garage"),menu_box)
 		label(Garage.NOTES[selected_vehicle],17,menu_box)
 		var spec = car.drivetrain.spec
 		label("%d PS / %d Nm / %d kg\n%s" % [spec.ps,spec.nm,spec.mass,spec.name],18,menu_box)
 		button("COURSE: "+Track.NAMES[selected_course],func():
-			change_selection(selected_vehicle,(selected_course+1)%3)
+			change_selection(selected_vehicle,(selected_course+1)%Track.NAMES.size())
 			show_menu("garage"),menu_box)
-		label("5.0 km downhill / tap to change",20,menu_box)
+		label("%.2f km / tap to change"%(track.total_length/1000.0),20,menu_box)
+		if selected_course==3:
+			label("OSM curve preview / elevation unverified\nWidth and scenery are placeholders",16,menu_box)
+			var credit = LinkButton.new()
+			credit.text = "© OpenStreetMap contributors / ODbL"
+			credit.uri = "https://www.openstreetmap.org/copyright"
+			credit.add_theme_font_size_override("font_size",16)
+			menu_box.add_child(credit)
 		button("DRIVE",start,menu_box)
 		button("BACK",func(): show_menu("title"),menu_box)
 	elif which == "settings":
@@ -217,6 +238,10 @@ func show_menu(which: String) -> void:
 		label("Steering sensitivity",22,menu_box)
 		menu_box.add_child(s)
 		s.value_changed.connect(func(v): sensitivity=v)
+		button("Counter assist: "+ASSIST_NAMES[assist_level],func():
+			assist_level = (assist_level+1)%ASSIST_NAMES.size()
+			apply_settings()
+			show_menu("settings"),menu_box)
 		button("Smoke / skid marks: "+str(effects),func():
 			effects = not effects
 			show_menu("settings"),menu_box)
@@ -238,7 +263,14 @@ func show_menu(which: String) -> void:
 		button("START" if which == "title" else "RESTART",start,menu_box)
 		button("CAR / COURSE",func(): show_menu("garage"),menu_box)
 		button("SETTINGS",func(): show_menu("settings"),menu_box)
-		if which != "finish": label("Left / Right + ACCEL / BRAKE\nNo drift button. Brake, turn, then accelerate.\nKeyboard: arrows / WASD  •  Esc pause",18,menu_box)
+		if which != "finish": label("Left / Right + ACCEL / BRAKE\nNo drift button. Brake, turn, then accelerate.\nKeyboard: arrows / WASD  •  Space handbrake
+Counter assist in SETTINGS  •  Esc pause",18,menu_box)
+
+	if which in ["settings","garage"]:
+		for child in menu_box.get_children():
+			if child is Button:
+				child.custom_minimum_size.y = 40
+				child.add_theme_font_size_override("font_size",20)
 
 func start() -> void:
 	result.reset()
@@ -265,6 +297,8 @@ func resume() -> void:
 	car.squeal.stream_paused = false
 
 func apply_settings() -> void:
+	car.counter_assist = ASSIST_STRENGTHS[assist_level]
+	car_name_label.text = "CAR: "+Garage.NAMES[selected_vehicle]+"  /  ASSIST "+ASSIST_NAMES[assist_level]
 	car.effects = effects
 	sunlight.shadow_enabled = shadows
 	AudioServer.set_bus_mute(0,not sound)
@@ -276,6 +310,7 @@ func save() -> void:
 	config.set_value("selection","vehicle",selected_vehicle)
 	config.set_value("selection","course",selected_course)
 	config.set_value("settings","sensitivity",sensitivity)
+	config.set_value("settings","counter_assist_level",assist_level)
 	config.set_value("settings","effects",effects)
 	config.set_value("settings","sound",sound)
 	config.set_value("settings","shadows",shadows)
@@ -294,7 +329,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
 		toggle_view()
 	if event is InputEventScreenTouch:
-		if event.pressed: touch_points[event.index] = event.position
+		if event.pressed and not event.canceled: touch_points[event.index] = event.position
 		else: touch_points.erase(event.index)
 	elif event is InputEventScreenDrag:
 		touch_points[event.index] = event.position
@@ -313,6 +348,7 @@ func held(action: String) -> float:
 func _physics_process(dt: float) -> void:
 	if running:
 		car.throttle = maxf(held("gas"),float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
+		car.handbrake = maxf(held("handbrake"),float(Input.is_physical_key_pressed(KEY_SPACE)))
 		car.brake = maxf(held("brake"),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN)))
 		var left = maxf(held("left"),float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)))
 		var right = maxf(held("right"),float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)))
@@ -332,7 +368,7 @@ func _physics_process(dt: float) -> void:
 	penalty_label.text = "CONTACT +3.0s" if result.notice>0 else ""
 	rpm_label.text = "%s   %04d RPM" % [car.drivetrain.gear_text(),int(car.drivetrain.rpm)]
 	speed_label.text = "%03d km/h" % int(car.speed*3.6)
-	status.text = "DRIFT  %.0f°" % absf(rad_to_deg(car.slip)) if car.speed>7 and absf(car.slip)>0.12 else "DOWNHILL  %d / %d m" % [int(car.progress),roundi(track.total_length)]
+	status.text = "DRIFT  %.0f°" % absf(rad_to_deg(car.slip)) if car.speed>7 and absf(car.slip)>0.12 else ("OSM PREVIEW  %d / %d m" if selected_course==3 else "DOWNHILL  %d / %d m") % [int(car.progress),roundi(track.total_length)]
 
 func record_key() -> String:
 	return "%d_%d" % [selected_course,selected_vehicle]
@@ -360,6 +396,7 @@ func change_selection(vehicle_id: int,course_id: int) -> void:
 		car.track = track
 	selected_course = course_id
 	selected_vehicle = vehicle_id
+	car_name_label.text = "CAR: "+Garage.NAMES[selected_vehicle]+"  /  ASSIST "+ASSIST_NAMES[assist_level]
 	car.set_vehicle(vehicle_id)
 	camera_started = false
 	update_camera(0,true)
@@ -400,7 +437,7 @@ func toggle_view() -> void:
 	save()
 
 func driver_eye() -> Vector3:
-	return car.position+car.global_basis*Vector3(0.32,[1.18,1.16,1.57,1.03,1.43,1.62,1.02][selected_vehicle],-0.12)
+	return car.position+car.global_basis*Vector3(0.32,[1.18,1.16,1.57,1.03,1.43,1.62,1.02,1.22][selected_vehicle],-0.12)
 
 func update_camera(dt: float,snap: bool = false) -> void:
 	car.model.visible = not driver_view

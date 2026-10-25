@@ -7,7 +7,8 @@ const SPECS = [
  {"name":"GR86 RZ / 6MT AUTO","ps":235,"kw":173.0,"nm":250.0,"torque_rpm":3700.0,"power_rpm":7000.0,"mass":1270.0,"radius":0.3146,"gears":[3.626,2.188,1.541,1.213,1.000,0.767],"final":4.100,"cvt":false,"ff":false,"redline":7500.0,"cda":0.79,"eff":0.84,"launch":3200.0,"shift":0.20,"limit":180.0},
  {"name":"TANTO X NA / D-CVT","ps":52,"kw":38.0,"nm":60.0,"torque_rpm":3600.0,"power_rpm":6900.0,"mass":910.0,"radius":0.27855,"gears":[3.316,0.501],"final":5.444,"cvt":true,"ff":true,"redline":7300.0,"cda":0.86,"eff":0.85,"launch":2400.0,"shift":0.0,"limit":140.0},
  {"name":"ALPHARD Z 2.5 / CVT","ps":182,"kw":134.0,"nm":235.0,"torque_rpm":4100.0,"power_rpm":6000.0,"mass":2060.0,"radius":0.3636,"gears":[2.517,0.390],"final":5.791,"cvt":true,"ff":true,"redline":6500.0,"cda":1.04,"eff":0.84,"launch":2200.0,"shift":0.0,"limit":180.0},
- {"name":"Z32 TWIN TURBO / 5MT AUTO","ps":280,"kw":206.0,"nm":388.0,"torque_rpm":3600.0,"power_rpm":6400.0,"mass":1510.0,"radius":0.3157,"gears":[3.214,1.925,1.302,1.000,0.752],"final":3.692,"cvt":false,"ff":false,"redline":7000.0,"cda":0.62,"eff":0.88,"launch":2800.0,"shift":0.28,"limit":180.0}
+ {"name":"Z32 TWIN TURBO / 5MT AUTO","ps":280,"kw":206.0,"nm":388.0,"torque_rpm":3600.0,"power_rpm":6400.0,"mass":1510.0,"radius":0.3157,"gears":[3.214,1.925,1.302,1.000,0.752],"final":3.692,"cvt":false,"ff":false,"redline":7000.0,"cda":0.62,"eff":0.88,"launch":2800.0,"shift":0.28,"limit":180.0},
+ {"name":"DJ DEMIO 2016 13S / 6AT","ps":92,"kw":68.0,"nm":121.0,"torque_rpm":4000.0,"power_rpm":6000.0,"mass":1030.0,"radius":0.30225,"gears":[3.529,2.025,1.348,1.000,0.742,0.594],"final":4.060,"cvt":false,"ff":true,"redline":6500.0,"cda":0.64,"eff":0.87,"launch":2300.0,"shift":0.25,"limit":180.0}
 ]
 var spec: Dictionary
 var gear = 0

@@ -42,3 +42,9 @@ Godot 4.5.1、1/60秒刻み、平坦・無風・全開・ドライバー75kg、6
 tests/powertrain.gd はピーク値、変速、CVT範囲、最高速収束、ブレーキ停止、リセットを検査。MINIは公表9.2秒/200km/h、GR86は英国仕様参考6.3秒/225km/hの近傍で回帰チェック。
 結果はリリース添付 powertrain-benchmark.json。解除時の予測最高速は実車の保証値ではなく、未較正の車では大きな差があり得ます。
 全7車種×3コースは自動運転テストで完走を確認します。接触ゼロや人間の操作感を保証するものではありません。
+
+## Added DJ Demio (v0.4.1)
+Selected configuration: **2016 October DJ3FS 13S, 2WD/FF, 1.3 petrol, 6EC-AT, standard halogen**. Grade/year are implementation choices, not claims the user specified petrol.
+Primary Mazda specification: https://newsroom.mazda.com/ja/publicity/release/2016/201610/161014b.pdf (pp.1–2). Catalogue anchors: 68 kW / 92 PS at 6,000 rpm; 121 Nm at 4,000 rpm; 1,030 kg; ratios 3.529 / 2.025 / 1.348 / 1.000 / 0.742 / 0.594; final 4.060; dimensions 4.060 × 1.695 × 1.525 m; wheelbase 2.570 m. No outside branding/model geometry copied.
+Explicit game estimates, not verified catalogue values: tyre effective radius 0.30225 m (185/65R15-sized), redline 6,500 rpm, CdA 0.64, drivetrain efficiency 0.87, launch slip 2,300 rpm, shift delay 0.25 s, 180 km/h limiter, torque interpolation, lateral/steering response, driver eye and detailed body shapes. These are consistent with the existing arcade system, not a vehicle-dynamics simulation.
+The synthetic level-road benchmark gives about 11.5 s to 100 km/h and 171.5 km/h maximum: simulation outputs, **not real-car performance claims**. Existing seven specs and driving calculation branches are preserved; the new car uses the FF branch.

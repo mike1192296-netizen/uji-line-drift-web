@@ -1,11 +1,12 @@
 extends RefCounted
 const G = preload("res://scripts/geometry.gd")
-const NAMES = ["ATHLETE SEDAN", "R50 COOPER", "70 VOXY", "GR86", "TANTO", "ALPHARD", "Z32 300ZX"]
-const NOTES = ["FR / 3.5 class / flowing power slides", "FF / 1.6 class / lift-off and brake rotation", "FF / 2.0 class / heavier, calmer response", "FR / 2.4 class / light, quick drift response", "FF / kei class / light and nimble", "FF / luxury van / heavy, smooth response", "FR / V6 turbo class / powerful, planted"]
+const NAMES = ["ATHLETE SEDAN", "R50 COOPER", "70 VOXY", "GR86", "TANTO", "ALPHARD", "Z32 300ZX", "DJ DEMIO"]
+const NOTES = ["FR / 3.5 class / flowing power slides", "FF / 1.6 class / lift-off and brake rotation", "FF / 2.0 class / heavier, calmer response", "FR / 2.4 class / light, quick drift response", "FF / kei class / light and nimble", "FF / luxury van / heavy, smooth response", "FR / V6 turbo class / powerful, planted", "2016 13S / 1.3 petrol / FF / 6AT"]
 
 static func build(parent: Node3D,id: int) -> Node3D:
 	if id==0: return G.car(parent)
 	if id==1: return preload("res://scripts/compact.gd").build(parent)
+	if id==7: return preload("res://scripts/demio.gd").build(parent)
 	if id>=4: return preload("res://scripts/extra_cars.gd").build(parent,id)
 	return build_variant(parent,id==2)
 

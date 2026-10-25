@@ -1,7 +1,8 @@
 extends Node3D
 const G = preload("res://scripts/geometry.gd")
 var course_id = 0
-const NAMES = ["UJI RIVER", "AUTUMN RIDGE", "LAKE RUN"]
+var start_index = 5
+const NAMES = ["UJI RIVER", "AUTUMN RIDGE", "LAKE RUN", "UJI LINE / OSM PREVIEW"]
 var points: PackedVector3Array = []
 var lengths: Array[float] = [0.0]
 var total_length: float = 0.0
@@ -43,10 +44,15 @@ func _ready() -> void:
 	leaf_mesh.rings = 6
 	leaf_mesh.radius = 1.0
 	leaf_mesh.height = 2.0
-	for start in range(0,points.size()-1,32): build_chunk(start,mini(start+32,points.size()-1))
-	mountains()
+	for start in range(0,points.size()-1,32):
+		if course_id==3: build_real_chunk(start,mini(start+32,points.size()-1))
+		else: build_chunk(start,mini(start+32,points.size()-1))
+	if course_id!=3: mountains()
 
 func make_points() -> void:
+	if course_id==3:
+		make_real_points()
+		return
 	var curve = Curve3D.new()
 	# Fictional Uji River-inspired route: original opening, then gorge/forest sections.
 	var plan = [Vector2(0,0),Vector2(0,-100),Vector2(55,-190),Vector2(-30,-290),Vector2(-80,-390),Vector2(0,-445),Vector2(80,-390),Vector2(150,-450),Vector2(135,-560),Vector2(60,-650),Vector2(110,-750),Vector2(210,-830),Vector2(250,-980),Vector2(180,-1130),Vector2(80,-1190),Vector2(30,-1320),Vector2(150,-1390),Vector2(230,-1320),Vector2(320,-1400),Vector2(370,-1570),Vector2(300,-1700),Vector2(160,-1790),Vector2(200,-1950),Vector2(320,-2070),Vector2(390,-2240),Vector2(290,-2310),Vector2(190,-2240),Vector2(100,-2320),Vector2(60,-2480),Vector2(180,-2610),Vector2(280,-2750),Vector2(230,-2910),Vector2(100,-2980),Vector2(70,-3140),Vector2(190,-3240),Vector2(310,-3310),Vector2(320,-3470),Vector2(240,-3620),Vector2(120,-3730),Vector2(160,-3890),Vector2(280,-4020)]
@@ -241,3 +247,52 @@ func nearest(pos: Vector3, hint: int) -> Dictionary:
 			var right = d.normalized().cross(Vector3.UP).normalized()
 			result = {"index":i,"point":p,"right":right,"offset":(pos-p).dot(right),"direction":d.normalized(),"progress":lengths[i]+d.length()*t}
 	return result
+
+
+func make_real_points() -> void:
+	# Licensed OSM centreline only. Y=0 is explicitly unverified, NOT measured road height.
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://routes/uji_visible_route_osm.json"))
+	var raw: Array[Vector3] = []
+	for xyz in data.local_xyz_m: raw.append(Vector3(xyz[0],0,xyz[2]))
+	var origin = raw[0]
+	var first = raw[1]-raw[0]
+	var align = -atan2(-first.x,-first.z)
+	for i in range(raw.size()): raw[i]=(raw[i]-origin).rotated(Vector3.UP,align)
+	# Linear 5 m resampling follows the real polyline without arbitrary 5 km scaling.
+	points = PackedVector3Array([raw[0]])
+	for i in range(raw.size()-1):
+		var count = maxi(1,ceili(raw[i].distance_to(raw[i+1])/5.0))
+		for j in range(1,count+1): points.append(raw[i].lerp(raw[i+1],float(j)/count))
+	lengths = [0.0]
+	for i in range(points.size()-1): lengths.append(lengths[-1]+points[i].distance_to(points[i+1]))
+	total_length = lengths[-1]
+	start_index = 1
+
+func build_real_chunk(start: int,end: int) -> void:
+	# Geometry-preview surroundings: no fabricated river/tunnel/bridge elevations.
+	# Road width and guardrail placement are gameplay placeholders, not surveyed dimensions.
+	var chunk = Node3D.new()
+	add_child(chunk)
+	var road = SurfaceTool.new()
+	road.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var ground = SurfaceTool.new()
+	ground.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(start,end):
+		var a = points[i]
+		var b = points[i+1]
+		var ra = right_at(i)
+		var rb = right_at(i+1)
+		strip_vertex(road,a-ra*6,b-rb*6,b+rb*6,a+ra*6)
+		for side in [-1.0,1.0]:
+			strip_vertex(ground,a+ra*6*side-Vector3.UP*0.05,b+rb*6*side-Vector3.UP*0.05,b+rb*40*side-Vector3.UP*0.05,a+ra*40*side-Vector3.UP*0.05)
+			G.beam(chunk,a+ra*5.5*side+Vector3.UP*0.028,b+rb*5.5*side+Vector3.UP*0.028,0.12,0.014,mats.white)
+			G.beam(chunk,a+ra*6.13*side+Vector3.UP*0.90,b+rb*6.13*side+Vector3.UP*0.90,0.06,0.16,mats.rail)
+			if i%2==0: G.box(chunk,a+ra*6.13*side+Vector3.UP*0.45,Vector3(0.08,0.90,0.08),mats.rail)
+		if i%2==0: G.beam(chunk,a+Vector3.UP*0.028,b+Vector3.UP*0.028,0.12,0.014,mats.yellow)
+	G.finish(chunk,road,mats.asphalt)
+	G.finish(chunk,ground,mats.ground)
+	G.merge_static(chunk)
+	for n in chunk.get_children():
+		if n is GeometryInstance3D:
+			n.visibility_range_end = 650
+			n.visibility_range_end_margin = 25

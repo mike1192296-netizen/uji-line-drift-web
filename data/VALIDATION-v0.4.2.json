@@ -1,0 +1,113 @@
+{
+  "version": "0.4.2",
+  "godot": "4.5.1",
+  "published": false,
+  "existing_7_cars_parity": "exact for 1800 frames per car with new assist OFF/handbrake unused",
+  "course_completions": 32,
+  "route_preview": "OSM centreline ~10.86km, heights/width/scenery unverified, flat placeholder",
+  "visual_qa": "not verified; X display socket restriction",
+  "iphone_runtime": "not tested",
+  "tests": {
+    "smoke.log": {
+      "errors": 0,
+      "results": [
+        "SMOKE RESULT: 0 failures"
+      ]
+    },
+    "course_drive.log": {
+      "errors": 0,
+      "results": [
+        "COURSE COMPLETE: course=0 car=0 time=317.566666666667s contacts=2",
+        "COURSE COMPLETE: course=0 car=1 time=315.9s contacts=0",
+        "COURSE COMPLETE: course=0 car=2 time=318.916666666667s contacts=6",
+        "COURSE COMPLETE: course=0 car=3 time=317.216666666667s contacts=0",
+        "COURSE COMPLETE: course=0 car=4 time=316.65s contacts=0",
+        "COURSE COMPLETE: course=0 car=5 time=321.35s contacts=27",
+        "COURSE COMPLETE: course=0 car=6 time=318.05s contacts=1",
+        "COURSE COMPLETE: course=0 car=7 time=316.233333333333s contacts=0",
+        "COURSE COMPLETE: course=1 car=0 time=313.4s contacts=0",
+        "COURSE COMPLETE: course=1 car=1 time=313.366666666667s contacts=0",
+        "COURSE COMPLETE: course=1 car=2 time=314.35s contacts=0",
+        "COURSE COMPLETE: course=1 car=3 time=313.3s contacts=0",
+        "COURSE COMPLETE: course=1 car=4 time=314.1s contacts=0",
+        "COURSE COMPLETE: course=1 car=5 time=314.666666666667s contacts=0",
+        "COURSE COMPLETE: course=1 car=6 time=313.433333333333s contacts=0",
+        "COURSE COMPLETE: course=1 car=7 time=313.666666666667s contacts=0",
+        "COURSE COMPLETE: course=2 car=0 time=318.25s contacts=0",
+        "COURSE COMPLETE: course=2 car=1 time=314.983333333333s contacts=0",
+        "COURSE COMPLETE: course=2 car=2 time=315.216666666667s contacts=0",
+        "COURSE COMPLETE: course=2 car=3 time=341.483333333333s contacts=0",
+        "COURSE COMPLETE: course=2 car=4 time=315.65s contacts=0",
+        "COURSE COMPLETE: course=2 car=5 time=315.25s contacts=0",
+        "COURSE COMPLETE: course=2 car=6 time=354.233333333333s contacts=0",
+        "COURSE COMPLETE: course=2 car=7 time=315.2s contacts=0"
+      ]
+    },
+    "powertrain.log": {
+      "errors": 0,
+      "results": [
+        "POWERTRAIN RESULT: 0 failures"
+      ]
+    },
+    "export.log": {
+      "errors": 0,
+      "results": []
+    },
+    "handling_parity.log": {
+      "errors": 0,
+      "results": [
+        "HANDLING PARITY RESULT: 0 failures"
+      ]
+    },
+    "real_route.log": {
+      "errors": 0,
+      "results": [
+        "REAL ROUTE COMPLETE car=0 seconds=775.416666666667 contacts=60",
+        "REAL ROUTE COMPLETE car=1 seconds=773.683333333333 contacts=13",
+        "REAL ROUTE COMPLETE car=2 seconds=799.816666666667 contacts=532",
+        "REAL ROUTE COMPLETE car=3 seconds=772.733333333333 contacts=10",
+        "REAL ROUTE COMPLETE car=4 seconds=775.233333333333 contacts=16",
+        "REAL ROUTE COMPLETE car=5 seconds=819.916666666667 contacts=947",
+        "REAL ROUTE COMPLETE car=6 seconds=774.933333333333 contacts=45",
+        "REAL ROUTE COMPLETE car=7 seconds=774.733333333333 contacts=19",
+        "REAL ROUTE RESULT: 0 failures"
+      ]
+    },
+    "race_result.log": {
+      "errors": 0,
+      "results": [
+        "RACE RESULT: 0 failures"
+      ]
+    },
+    "assist_handbrake.log": {
+      "errors": 0,
+      "results": [
+        "RECOVERY 0 integrated slip OFF/WEAK/MED/STRONG=[0.06923418916767, 0.06656488743723, 0.06429353989922, 0.06193988368722]",
+        "RECOVERY 1 integrated slip OFF/WEAK/MED/STRONG=[0.05720435068335, 0.05525723201759, 0.05357588057865, 0.05179776745306]",
+        "RECOVERY 2 integrated slip OFF/WEAK/MED/STRONG=[0.06114304954892, 0.05907098206054, 0.05712765775831, 0.05485779033042]",
+        "RECOVERY 3 integrated slip OFF/WEAK/MED/STRONG=[0.06912412229855, 0.06634518899105, 0.06398238185088, 0.0615216471375]",
+        "RECOVERY 4 integrated slip OFF/WEAK/MED/STRONG=[0.05674614941158, 0.0548112237081, 0.05313776249371, 0.05136465446599]",
+        "RECOVERY 5 integrated slip OFF/WEAK/MED/STRONG=[0.0676639061653, 0.06525339604033, 0.06299595884327, 0.06036010313839]",
+        "RECOVERY 6 integrated slip OFF/WEAK/MED/STRONG=[0.06831513854405, 0.06569201902025, 0.06345800503683, 0.06113754729033]",
+        "RECOVERY 7 integrated slip OFF/WEAK/MED/STRONG=[0.05755947230994, 0.05560030893874, 0.05390778028636, 0.05212174104564]",
+        "ASSIST HANDBRAKE RESULT: 0 failures"
+      ]
+    },
+    "demio_hud.log": {
+      "errors": 0,
+      "results": [
+        "DEMIO HUD RESULT: 0 failures"
+      ]
+    },
+    "import.log": {
+      "errors": 0,
+      "results": []
+    },
+    "driver_view.log": {
+      "errors": 0,
+      "results": [
+        "DRIVER VIEW RESULT: 0 failures"
+      ]
+    }
+  }
+}

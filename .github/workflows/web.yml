@@ -30,13 +30,17 @@ jobs:
           touch build/.gdignore
           godot --headless --editor --import --quit
           godot --headless --script tests/smoke.gd 2>&1 | tee build/test.log
-          godot --headless --script tests/powertrain.gd 2>&1 | tee -a build/test.log
+          for test in powertrain driver_view race_result demio_hud handling_parity assist_handbrake real_route; do
+            godot --headless --script tests/$test.gd 2>&1 | tee -a build/test.log
+          done
           ! grep -E 'SCRIPT ERROR|^ERROR:' build/test.log
           godot --headless --export-release Web build/web/game/index.html 2>&1 | tee build/export.log
           ! grep -E 'SCRIPT ERROR|^ERROR:' build/export.log
           test -s build/web/game/index.wasm
           test -s build/web/game/index.pck
           cp web/* build/web/
+          mkdir -p build/web/route-data
+          cp routes/uji_visible_route_osm.json build/web/route-data/
           touch build/web/.nojekyll
       - name: Publish generated files
         env:
