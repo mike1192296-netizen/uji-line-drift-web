@@ -1,0 +1,2 @@
+Uji River route preview: © OpenStreetMap contributors. ODbL: https://www.openstreetmap.org/copyright
+Derived centreline: route-data/uji_visible_route_osm.json. Heights/width/scenery unverified; not exact real-world recreation.
