@@ -1,5 +1,9 @@
 extends Node3D
 const G = preload("res://scripts/geometry.gd")
+signal build_progress(value: float)
+signal build_finished
+var progressive_build = OS.has_feature("web")
+var build_complete = false
 var course_id = 0
 var start_index = 5
 const NAMES = ["UJI RIVER", "AUTUMN RIDGE", "LAKE RUN", "UJI LINE / OSM PREVIEW"]
@@ -44,10 +48,17 @@ func _ready() -> void:
 	leaf_mesh.rings = 6
 	leaf_mesh.radius = 1.0
 	leaf_mesh.height = 2.0
+	if progressive_build:
+		await get_tree().process_frame
 	for start in range(0,points.size()-1,32):
 		if course_id==3: build_real_chunk(start,mini(start+32,points.size()-1))
 		else: build_chunk(start,mini(start+32,points.size()-1))
+		build_progress.emit(float(mini(start+32,points.size()-1))/float(points.size()-1))
+		if progressive_build:
+			await get_tree().process_frame
 	if course_id!=3: mountains()
+	build_complete = true
+	build_finished.emit()
 
 func make_points() -> void:
 	if course_id==3:

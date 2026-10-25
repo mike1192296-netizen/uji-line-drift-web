@@ -42,9 +42,19 @@ var effects = true
 var sound = true
 var camera_started = false
 var shadows = true
+var startup_complete = false
+var selection_loading = false
+var loading_layer: CanvasLayer
+var loading_label: Label
+var progressive_loading = OS.has_feature("web")
 var sunlight: DirectionalLight3D
 
 func _ready() -> void:
+	set_physics_process(false)
+	if progressive_loading:
+		show_loading("PREPARING COURSE... 0%")
+		await get_tree().process_frame
+		await get_tree().process_frame
 	config.load("user://settings.cfg")
 	selected_vehicle = clampi(config.get_value("selection","vehicle",0),0,Garage.NAMES.size()-1)
 	selected_course = clampi(config.get_value("selection","course",0),0,Track.NAMES.size()-1)
@@ -84,7 +94,14 @@ func _ready() -> void:
 	add_child(sun)
 	track = Track.new()
 	track.course_id = selected_course
+	track.progressive_build = progressive_loading
+	track.build_progress.connect(update_loading_progress)
 	add_child(track)
+	if not track.build_complete:
+		await track.build_finished
+	if progressive_loading:
+		loading_label.text = "PREPARING CAR..."
+		await get_tree().process_frame
 	car = Vehicle.new()
 	car.vehicle_id = selected_vehicle
 	car.track = track
@@ -100,6 +117,36 @@ func _ready() -> void:
 	update_camera(0,true)
 	apply_settings()
 	show_menu("title")
+	startup_complete = true
+	hide_loading()
+	set_physics_process(true)
+
+func show_loading(message: String) -> void:
+	if not is_instance_valid(loading_layer):
+		loading_layer = CanvasLayer.new()
+		loading_layer.layer = 100
+		add_child(loading_layer)
+		var panel = ColorRect.new()
+		panel.color = Color(0.04,0.07,0.09)
+		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		loading_layer.add_child(panel)
+		loading_label = Label.new()
+		loading_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		loading_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		loading_label.add_theme_font_size_override("font_size",28)
+		loading_label.add_theme_font_override("font",load("res://fonts/UjiSans.ttf"))
+		panel.add_child(loading_label)
+	loading_layer.show()
+	loading_label.text = message
+
+func update_loading_progress(value: float) -> void:
+	if is_instance_valid(loading_label):
+		loading_label.text = "PREPARING COURSE... %d%%" % roundi(value*100)
+
+func hide_loading() -> void:
+	if is_instance_valid(loading_layer):
+		loading_layer.hide()
 
 func label(text: String, size: int, parent: Node) -> Label:
 	var l = Label.new()
@@ -188,6 +235,7 @@ func build_ui() -> void:
 	menu.add_child(menu_box)
 
 func show_menu(which: String) -> void:
+	if selection_loading: return
 	running = false
 	mode = which
 	menu_box.add_theme_constant_override("separation",8 if which in ["settings","garage"] else 12)
@@ -207,17 +255,17 @@ func show_menu(which: String) -> void:
 		menu_box.remove_child(child)
 		child.queue_free()
 	label("宇治川ライン DRIFT",34,menu_box)
-	label("V0.4.2  /  DOWNHILL SESSION",19,menu_box)
+	label("V0.4.3  /  DOWNHILL SESSION",19,menu_box)
 	label("BEST SCORE %06d  /  TIME %s" % [best,RunResult.clock(best_time)],19,menu_box)
 	if which == "garage":
 		button("CAR: "+Garage.NAMES[selected_vehicle]+"  /  ASSIST "+ASSIST_NAMES[assist_level],func():
-			change_selection((selected_vehicle+1)%Garage.NAMES.size(),selected_course)
+			await change_selection((selected_vehicle+1)%Garage.NAMES.size(),selected_course)
 			show_menu("garage"),menu_box)
 		label(Garage.NOTES[selected_vehicle],17,menu_box)
 		var spec = car.drivetrain.spec
 		label("%d PS / %d Nm / %d kg\n%s" % [spec.ps,spec.nm,spec.mass,spec.name],18,menu_box)
 		button("COURSE: "+Track.NAMES[selected_course],func():
-			change_selection(selected_vehicle,(selected_course+1)%Track.NAMES.size())
+			await change_selection(selected_vehicle,(selected_course+1)%Track.NAMES.size())
 			show_menu("garage"),menu_box)
 		label("%.2f km / tap to change"%(track.total_length/1000.0),20,menu_box)
 		if selected_course==3:
@@ -273,6 +321,7 @@ Counter assist in SETTINGS  •  Esc pause",18,menu_box)
 				child.add_theme_font_size_override("font_size",20)
 
 func start() -> void:
+	if selection_loading or not startup_complete: return
 	result.reset()
 	new_time_record = false
 	car.reset()
@@ -283,6 +332,7 @@ func start() -> void:
 	resume()
 
 func resume() -> void:
+	if selection_loading or not startup_complete: return
 	if result.finished:
 		show_menu("finish")
 		return
@@ -322,6 +372,7 @@ func _notification(what: int) -> void:
 		show_menu("pause")
 
 func _input(event: InputEvent) -> void:
+	if selection_loading: return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if running: show_menu("pause")
 		elif mode == "pause": resume()
@@ -346,6 +397,7 @@ func held(action: String) -> float:
 	return 0.0
 
 func _physics_process(dt: float) -> void:
+	if not startup_complete: return
 	if running:
 		car.throttle = maxf(held("gas"),float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		car.handbrake = maxf(held("handbrake"),float(Input.is_physical_key_pressed(KEY_SPACE)))
@@ -379,6 +431,8 @@ func load_best() -> void:
 	best_time = config.get_value("times",record_key(),-1.0)
 
 func change_selection(vehicle_id: int,course_id: int) -> void:
+	if selection_loading: return
+	selection_loading = true
 	save()
 	result.reset()
 	new_time_record = false
@@ -388,11 +442,19 @@ func change_selection(vehicle_id: int,course_id: int) -> void:
 	score = 0
 	combo = 1
 	if selected_course!=course_id:
+		set_physics_process(false)
+		if progressive_loading:
+			show_loading("PREPARING COURSE... 0%")
+			await get_tree().process_frame
 		remove_child(track)
 		track.free()
 		track = Track.new()
 		track.course_id = course_id
+		track.progressive_build = progressive_loading
+		track.build_progress.connect(update_loading_progress)
 		add_child(track)
+		if not track.build_complete:
+			await track.build_finished
 		car.track = track
 	selected_course = course_id
 	selected_vehicle = vehicle_id
@@ -402,6 +464,9 @@ func change_selection(vehicle_id: int,course_id: int) -> void:
 	update_camera(0,true)
 	load_best()
 	save()
+	selection_loading = false
+	hide_loading()
+	set_physics_process(true)
 
 func build_cockpit() -> void:
 	# Lightweight generic right-hand-drive dashboard. Exterior glass is opaque,

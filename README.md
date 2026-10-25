@@ -46,3 +46,9 @@ APK開発用の既存リポジトリとは別の公開用スナップショッ�
 - Detailed tests in build/*.log. Headless runtime verification does not prove smartphone visual quality, performance or feel. Browser/iPhone still require visual QA.
 
 Final v0.4.2 verification: all 32 car/course combinations completed; all listed tests passed with no script/engine errors. Mirror-direction slide bounded for all eight cars. See data/VALIDATION-v0.4.2.json.
+
+
+## v0.4.3 startup repair
+- Stream road/world construction across frames with a visible loading status. Release detached temporary geometry immediately rather than retaining it until the first frame, without changing rendered mesh geometry or vehicle handling. Measured local startup peak RSS fell from approximately 310 MB to 117 MB.
+- The Web loader now distinguishes download, engine startup and game preparation, and reports startup failures instead of leaving an unexplained 100% bar. Route switches are guarded against repeated selection/start actions while loading.
+- All nine Godot test suites and the Node Web loader tests passed; Web export passed. See data/VALIDATION-v0.4.3.json. Android device runtime remains unverified; this repair addresses a measured startup memory issue, not a proven diagnosis of every device-specific launch failure.

@@ -1,0 +1,38 @@
+{
+  "version": "0.4.3",
+  "purpose": "Repair Android startup stall at fully downloaded Godot splash",
+  "root_cause_confirmed_on_user_device": false,
+  "verified_defect": "25346 temporary merged geometry nodes retained until first frame",
+  "repair": [
+    "Release detached merged geometry immediately",
+    "Build course chunks cooperatively with visible progress on Web",
+    "Block gameplay and repeated selections while loading",
+    "Separate download versus engine initialization in HTML loader; visible errors and record-preserving retry"
+  ],
+  "native_peak_bytes": {
+    "before": 310618314,
+    "after": 116721922
+  },
+  "geometry_equivalence": {
+    "count": 776,
+    "before_after_sha256": "a4cc172e751fb6c5a394fc48e60bcf217f3313fa38f2387cc08a6190b09f89fc"
+  },
+  "tests": [
+    "smoke",
+    "powertrain",
+    "driver_view",
+    "race_result",
+    "demio_hud",
+    "handling_parity",
+    "assist_handbrake",
+    "real_route",
+    "startup_loading",
+    "web_loader"
+  ],
+  "limitations": [
+    "Native/headless profiling does not measure phone browser peak RAM",
+    "Cloud browser has WebGL2 unavailable; actual game rendering/phone start not verified",
+    "User screenshot alone cannot distinguish WASM compile, initialization delay or memory failure"
+  ],
+  "record_safety": "Project name, user://settings.cfg, record keys and browser storage untouched; no data clear"
+}

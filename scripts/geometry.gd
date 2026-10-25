@@ -32,7 +32,8 @@ static func merge_static(parent: Node3D) -> void:
 				groups[mat] = surface
 			groups[mat].append_from(child.mesh,0,child.transform)
 			parent.remove_child(child)
-			child.queue_free()
+			# Detached temporary geometry: release now, not after the entire world builds.
+			child.free()
 	for mat in groups:
 		var instance = MeshInstance3D.new()
 		instance.mesh = groups[mat].commit()

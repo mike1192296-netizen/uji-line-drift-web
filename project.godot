@@ -1,7 +1,7 @@
 config_version=5
 [application]
 config/name="宇治川ライン DRIFT"
-config/version="0.4.2"
+config/version="0.4.3"
 config/icon="res://icon.svg"
 run/main_scene="res://main.tscn"
 [display]
