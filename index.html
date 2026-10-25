@@ -25,7 +25,7 @@ body.playing main{display:none}body.playing #stage{display:block}
 </head>
 <body>
 <main><article>
-<small>KYOTO · DRIFT / WEB v0.4.2</small>
+<small>KYOTO · DRIFT / WEB v0.4.3</small>
 <h1>宇治川ライン<span>DRIFT</span></h1>
 <p>8台のクルマと3本の下り峠＋宇治川ラインのOSM形状プレビュー。<br>サイドブレーキと4段階カウンターアシストを追加。<br>プレビュー約10.86km：標高・道幅・景色は未検証の仮表現。</p>
 <button id="play">プレイする</button>
@@ -39,7 +39,7 @@ document.getElementById('play').addEventListener('click',()=>{
  const frame=document.createElement('iframe');
  frame.title='宇治川ライン DRIFT ゲーム';
  frame.allow='autoplay; fullscreen';
- frame.src='game/index.html';
+ frame.src='game/index.html?v=0.4.3';
  document.getElementById('stage').appendChild(frame);
  document.body.classList.add('playing');
  document.getElementById('play').disabled=true;
